@@ -37,6 +37,7 @@ CREATE TABLE "Schedule" (
     "objective" TEXT NOT NULL,
     "customerId" UUID NOT NULL,
     "doctorId" UUID NOT NULL,
+    "scheduledAt" TIMESTAMP(3) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -48,6 +49,10 @@ CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Customer_email_key" ON "Customer"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Schedule_doctorId_scheduledAt_key"
+ON "Schedule"("doctorId", "scheduledAt");
 
 -- AddForeignKey
 ALTER TABLE "Schedule" ADD CONSTRAINT "Schedule_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

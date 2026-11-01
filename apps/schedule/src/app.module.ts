@@ -6,12 +6,14 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { CustomerModule } from './customer/customer.module.js';
 import { DoctorModule } from './doctor/doctor.module.js';
+import { ScheduleModule } from './schedule/schedule.module.js';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     CustomerModule,
     DoctorModule,
+    ScheduleModule,
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: 'apps/schedule/schema.gql',

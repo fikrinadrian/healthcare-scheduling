@@ -11,10 +11,22 @@ input CreateDoctorInput {
   name: String!
 }
 
+input CreateScheduleInput {
+  customerId: String!
+  doctorId: String!
+  objective: String!
+  scheduledAt: DateTime!
+}
+
 type Customer {
   id: String!
   name: String!
 }
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
 
 type Doctor {
   id: String!
@@ -24,8 +36,10 @@ type Doctor {
 type Mutation {
   createCustomer(createCustomerInput: CreateCustomerInput!): Customer!
   createDoctor(createDoctorInput: CreateDoctorInput!): Doctor!
+  createSchedule(createScheduleInput: CreateScheduleInput!): Schedule!
   removeCustomer(id: String!): Customer!
   removeDoctor(id: String!): Doctor!
+  removeSchedule(id: String!): Schedule!
   updateCustomer(updateCustomerInput: UpdateCustomerInput!): Customer!
   updateDoctor(updateDoctorInput: UpdateDoctorInput!): Doctor!
 }
@@ -35,6 +49,18 @@ type Query {
   customers: [Customer!]!
   doctor(id: String!): Doctor!
   doctors: [Doctor!]!
+  schedule(id: String!): Schedule!
+  schedules: [Schedule!]!
+}
+
+type Schedule {
+  customer: Customer!
+  customerId: String!
+  doctor: Doctor!
+  doctorId: String!
+  id: String!
+  objective: String!
+  scheduledAt: DateTime!
 }
 
 input UpdateCustomerInput {
