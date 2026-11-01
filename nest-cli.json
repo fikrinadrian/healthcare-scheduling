@@ -19,15 +19,7 @@
         "tsConfigPath": "apps/auth/tsconfig.app.json"
       }
     },
-    "rata-nest-project": {
-      "type": "application",
-      "root": "apps/rata-nest-project",
-      "entryFile": "main",
-      "sourceRoot": "apps/rata-nest-project/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/rata-nest-project/tsconfig.app.json"
-      }
-    },
+
     "schedule": {
       "type": "application",
       "root": "apps/schedule",
