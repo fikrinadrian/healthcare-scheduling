@@ -6,9 +6,6 @@ export class SignResponse {
   @Field()
   accessToken: string;
 
-  @Field()
-  refreshToken: string;
-
   @Field(() => User)
   user: User;
 }

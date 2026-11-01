@@ -31,7 +31,6 @@ input SignInput {
 
 type SignResponse {
   accessToken: String!
-  refreshToken: String!
   user: User!
 }
 
