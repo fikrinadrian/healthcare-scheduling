@@ -16,7 +16,6 @@ import { AuthModule } from './auth/auth.module.js';
       driver: ApolloDriver,
       autoSchemaFile: 'apps/auth/schema.gql',
       sortSchema: true,
-      context: ({ req }) => ({ req }),
     }),
   ],
   controllers: [AuthController],

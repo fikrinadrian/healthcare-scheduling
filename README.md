@@ -57,6 +57,18 @@ $ pnpm run test:e2e
 $ pnpm run test:cov
 ```
 
+## Database migrations
+
+The auth and schedule services share the root Prisma schema and migration history. Run Prisma commands from the repository root:
+
+```bash
+pnpm run prisma:migrate:status
+pnpm run prisma:migrate:dev -- --name describe_change
+pnpm run prisma:generate
+```
+
+Do not run `prisma migrate reset` against the shared database; it drops the database schema.
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
