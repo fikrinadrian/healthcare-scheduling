@@ -1,0 +1,49 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+input CreateCustomerInput {
+  email: String!
+  name: String!
+}
+
+input CreateDoctorInput {
+  name: String!
+}
+
+type Customer {
+  id: String!
+  name: String!
+}
+
+type Doctor {
+  id: String!
+  name: String!
+}
+
+type Mutation {
+  createCustomer(createCustomerInput: CreateCustomerInput!): Customer!
+  createDoctor(createDoctorInput: CreateDoctorInput!): Doctor!
+  removeCustomer(id: String!): Customer!
+  removeDoctor(id: String!): Doctor!
+  updateCustomer(updateCustomerInput: UpdateCustomerInput!): Customer!
+  updateDoctor(updateDoctorInput: UpdateDoctorInput!): Doctor!
+}
+
+type Query {
+  customer(id: String!): Customer!
+  customers: [Customer!]!
+  doctor(id: String!): Doctor!
+  doctors: [Doctor!]!
+}
+
+input UpdateCustomerInput {
+  email: String
+  id: String!
+  name: String!
+}
+
+input UpdateDoctorInput {
+  id: String!
+  name: String!
+}
