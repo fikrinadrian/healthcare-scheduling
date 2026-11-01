@@ -7,14 +7,26 @@ input CreateUserInput {
   password: String!
 }
 
+type LogoutResponse {
+  loggedOut: Boolean!
+}
+
 type Mutation {
   createUser(createUserInput: CreateUserInput!): User!
-  signup(signUpInput: SignUpInput!): SignResponse!
+  logout(userId: String!): LogoutResponse!
+  signin(signInInput: SignInput!): SignResponse!
+  signup(signUpInput: SignInput!): SignResponse!
 }
 
 type Query {
   user(id: String!): User!
   users: [User!]!
+  validateToken: ValidateTokenResponse!
+}
+
+input SignInput {
+  email: String!
+  password: String!
 }
 
 type SignResponse {
@@ -23,12 +35,12 @@ type SignResponse {
   user: User!
 }
 
-input SignUpInput {
-  email: String!
-  password: String!
-}
-
 type User {
   email: String!
   id: String!
+}
+
+type ValidateTokenResponse {
+  user: User
+  valid: Boolean!
 }
