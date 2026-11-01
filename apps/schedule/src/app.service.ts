@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
-export class ScheduleService {
+export class AppService {
   getHello(): string {
-    return 'Hello World!';
+    return 'Schedule service run!';
   }
 }
