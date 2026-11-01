@@ -31,10 +31,21 @@ export class ScheduleService {
       throw new NotFoundException(`Doctor tidak ditemukan`);
     }
 
+    const oneHour = 60 * 60 * 1000;
+    const earliestAllowed = new Date(
+      createScheduleInput.scheduledAt.getTime() - oneHour,
+    );
+    const latestAllowed = new Date(
+      createScheduleInput.scheduledAt.getTime() + oneHour,
+    );
+
     const conflictingSchedule = await this.prisma.schedule.findFirst({
       where: {
         doctorId: createScheduleInput.doctorId,
-        scheduledAt: createScheduleInput.scheduledAt,
+        scheduledAt: {
+          gt: earliestAllowed,
+          lt: latestAllowed,
+        },
       },
       select: { id: true },
     });
@@ -58,7 +69,7 @@ export class ScheduleService {
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
+        (error.code === 'P2002' || error.code === 'P2004')
       ) {
         throw new ConflictException(
           'Dokter sudah memiliki jadwal pada waktu tersebut',
