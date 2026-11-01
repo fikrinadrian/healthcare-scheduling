@@ -2,22 +2,33 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-type User {
-  id: String!
+input CreateUserInput {
   email: String!
   password: String!
-}
-
-type Query {
-  users: [User!]!
-  user(id: String!): User!
 }
 
 type Mutation {
   createUser(createUserInput: CreateUserInput!): User!
+  signup(signUpInput: SignUpInput!): SignResponse!
 }
 
-input CreateUserInput {
+type Query {
+  user(id: String!): User!
+  users: [User!]!
+}
+
+type SignResponse {
+  accessToken: String!
+  refreshToken: String!
+  user: User!
+}
+
+input SignUpInput {
   email: String!
   password: String!
+}
+
+type User {
+  email: String!
+  id: String!
 }
