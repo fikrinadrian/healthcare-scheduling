@@ -18,41 +18,14 @@ input CreateScheduleInput {
   scheduledAt: DateTime!
 }
 
-input ScheduleFilterInput {
-  customerId: String
-  doctorId: String
-  objective: String
-  scheduledAtFrom: DateTime
-  scheduledAtTo: DateTime
+type Customer {
+  id: String!
+  name: String!
 }
 
 type CustomerPage {
   items: [Customer!]!
   pageInfo: PageInfo!
-}
-
-type DoctorPage {
-  items: [Doctor!]!
-  pageInfo: PageInfo!
-}
-
-type PageInfo {
-  hasNextPage: Boolean!
-  hasPreviousPage: Boolean!
-  limit: Int!
-  page: Int!
-  totalCount: Int!
-  totalPages: Int!
-}
-
-type SchedulePage {
-  items: [Schedule!]!
-  pageInfo: PageInfo!
-}
-
-type Customer {
-  id: String!
-  name: String!
 }
 
 """
@@ -63,6 +36,11 @@ scalar DateTime
 type Doctor {
   id: String!
   name: String!
+}
+
+type DoctorPage {
+  items: [Doctor!]!
+  pageInfo: PageInfo!
 }
 
 type Mutation {
@@ -76,13 +54,22 @@ type Mutation {
   updateDoctor(updateDoctorInput: UpdateDoctorInput!): Doctor!
 }
 
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  limit: Int!
+  page: Int!
+  totalCount: Int!
+  totalPages: Int!
+}
+
 type Query {
   customer(id: String!): Customer!
-  customers(limit: Int = 10, page: Int = 1): CustomerPage!
+  customers(limit: Int! = 10, page: Int! = 1): CustomerPage!
   doctor(id: String!): Doctor!
-  doctors(limit: Int = 10, page: Int = 1): DoctorPage!
+  doctors(limit: Int! = 10, page: Int! = 1): DoctorPage!
   schedule(id: String!): Schedule!
-  schedules(filter: ScheduleFilterInput, limit: Int = 10, page: Int = 1): SchedulePage!
+  schedules(filter: ScheduleFilterInput, limit: Int! = 10, page: Int! = 1): SchedulePage!
 }
 
 type Schedule {
@@ -93,6 +80,19 @@ type Schedule {
   id: String!
   objective: String!
   scheduledAt: DateTime!
+}
+
+input ScheduleFilterInput {
+  customerId: String
+  doctorId: String
+  objective: String
+  scheduledAtFrom: DateTime
+  scheduledAtTo: DateTime
+}
+
+type SchedulePage {
+  items: [Schedule!]!
+  pageInfo: PageInfo!
 }
 
 input UpdateCustomerInput {

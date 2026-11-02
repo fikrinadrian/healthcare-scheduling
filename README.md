@@ -7,6 +7,7 @@ A GraphQL backend for user authentication and managing customers, doctors, and a
 - NestJS and GraphQL
 - Prisma ORM
 - PostgreSQL
+- SMTP email notifications
 - Docker Compose
 
 ## System architecture
@@ -17,12 +18,13 @@ flowchart LR
     Auth[Auth Service<br/>:3001]
     Schedule[Schedule Service<br/>:3002]
     DB[(PostgreSQL<br/>:5432)]
+    Mailpit[Mailpit SMTP capture<br/>:1025 / UI :8025]
 
     Client -->|signup / signin| Auth
     Client -->|Bearer access token| Schedule
     Schedule -->|validateToken + Bearer token| Auth
     Auth --> DB
-    Schedule --> DB
+    Schedule -->|schedule created / deleted| Mailpit
 ```
 
 All containers connect through the `app-network` network. The Schedule Service validates each request by calling the Auth Service's `validateToken` query. The `migrate` service applies Prisma migrations before either API starts. PostgreSQL data is stored in the Docker volume `postgres_data`.
@@ -69,21 +71,31 @@ This command preserves the database volume. Running `docker compose down -v` als
 
 ## Environment variables
 
-| Variable                  | Compose default                                                          | Description                                                                                                  |
-| ------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| `POSTGRES_DB`             | `healthcare`                                                             | PostgreSQL database name.                                                                                    |
-| `POSTGRES_USER`           | `postgres`                                                               | PostgreSQL user.                                                                                             |
-| `POSTGRES_PASSWORD`       | `postgres`                                                               | PostgreSQL password. Change it outside local development.                                                    |
-| `POSTGRES_PORT`           | `5432`                                                                   | PostgreSQL port published to the host.                                                                       |
-| `DATABASE_URL`            | `postgresql://postgres:postgres@localhost:5432/healthcare?schema=public` | URL for running Prisma commands from the host. Compose builds an internal URL using the `postgres` hostname. |
-| `AUTH_PORT`               | `3001`                                                                   | Auth Service port.                                                                                           |
-| `SCHEDULE_PORT`           | `3002`                                                                   | Schedule Service port.                                                                                       |
-| `AUTH_SERVICE_URL`        | `http://auth:3001/graphql`                                               | Auth Service URL used by Schedule Service on the Compose network. Update the port if `AUTH_PORT` changes.    |
-| `AUTH_SERVICE_TIMEOUT_MS` | `3000`                                                                   | Auth Service token validation timeout in milliseconds.                                                       |
-| `JWT_ACCESS_SECRET`       | `change-this-access-secret`                                              | Access token signing secret. Use a strong secret value.                                                      |
-| `JWT_REFRESH_SECRET`      | `change-this-refresh-secret`                                             | Refresh token signing secret. Use a strong secret value.                                                     |
+| Variable                  | Compose default                                                          | Description                                                                                                    |
+| ------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `POSTGRES_DB`             | `healthcare`                                                             | PostgreSQL database name.                                                                                      |
+| `POSTGRES_USER`           | `postgres`                                                               | PostgreSQL user.                                                                                               |
+| `POSTGRES_PASSWORD`       | `postgres`                                                               | PostgreSQL password. Change it outside local development.                                                      |
+| `POSTGRES_PORT`           | `5432`                                                                   | PostgreSQL port published to the host.                                                                         |
+| `DATABASE_URL`            | `postgresql://postgres:postgres@localhost:5432/healthcare?schema=public` | URL for running Prisma commands from the host. Compose builds an internal URL using the `postgres` hostname.   |
+| `AUTH_PORT`               | `3001`                                                                   | Auth Service port.                                                                                             |
+| `SCHEDULE_PORT`           | `3002`                                                                   | Schedule Service port.                                                                                         |
+| `AUTH_SERVICE_URL`        | `http://auth:3001/graphql`                                               | Auth Service URL used by Schedule Service on the Compose network. Update the port if `AUTH_PORT` changes.      |
+| `AUTH_SERVICE_TIMEOUT_MS` | `3000`                                                                   | Auth Service token validation timeout in milliseconds.                                                         |
+| `SMTP_HOST`               | `mailpit`                                                                | SMTP server hostname. Use `mailpit` from Compose or `localhost` when running the Schedule Service on the host. |
+| `SMTP_PORT`               | `1025`                                                                   | SMTP server port.                                                                                              |
+| `SMTP_SECURE`             | `false`                                                                  | Set to `true` for implicit TLS, commonly on port 465.                                                          |
+| `SMTP_USER`               | empty                                                                    | SMTP username.                                                                                                 |
+| `SMTP_PASSWORD`           | empty                                                                    | SMTP password.                                                                                                 |
+| `MAIL_FROM`               | `Healthcare Scheduling <no-reply@localhost>`                             | Sender address shown in schedule notification emails.                                                          |
+| `MAILPIT_SMTP_PORT`       | `1025`                                                                   | Mailpit SMTP port published to the host.                                                                       |
+| `MAILPIT_UI_PORT`         | `8025`                                                                   | Mailpit web UI port published to the host.                                                                     |
+| `JWT_ACCESS_SECRET`       | `change-this-access-secret`                                              | Access token signing secret. Use a strong secret value.                                                        |
+| `JWT_REFRESH_SECRET`      | `change-this-refresh-secret`                                             | Refresh token signing secret. Use a strong secret value.                                                       |
 
 Set local values in `.env`. Do not use the example secrets in a deployment.
+
+For local development, Compose starts Mailpit as a fake SMTP server. Schedule emails are captured instead of being delivered externally; open `http://localhost:8025` to view them. Mailpit listens on SMTP port `1025` without TLS or authentication by default. To send real emails, set `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, and the SMTP credentials for your email provider. The Schedule Service sends notifications after a schedule is created or deleted. SMTP delivery failures are logged and do not undo the database operation.
 
 ## Authentication
 

@@ -22,6 +22,15 @@ services:
     networks:
       - app-network
 
+  mailpit:
+    image: axllent/mailpit:v1.27.4
+    restart: unless-stopped
+    ports:
+      - '${MAILPIT_SMTP_PORT:-1025}:1025'
+      - '${MAILPIT_UI_PORT:-8025}:8025'
+    networks:
+      - app-network
+
   migrate:
     build:
       context: .
@@ -79,6 +88,12 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-healthcare}?schema=public
       AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth:3001/graphql}
       AUTH_SERVICE_TIMEOUT_MS: ${AUTH_SERVICE_TIMEOUT_MS:-3000}
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-Healthcare Scheduling <no-reply@localhost>}
     ports:
       - '${SCHEDULE_PORT:-3002}:${SCHEDULE_PORT:-3002}'
     depends_on:
@@ -86,6 +101,8 @@ services:
         condition: service_completed_successfully
       auth:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     restart: unless-stopped
     networks:
       - app-network

@@ -9,10 +9,14 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { Prisma } from '../../../../generated/prisma/client.js';
 import { ScheduleFilterInput } from './dto/schedule-filter.input.js';
 import { createPageInfo, normalizePagination } from '../common/pagination.js';
+import { EmailNotificationService } from '../notifications/email-notification.service.js';
 
 @Injectable()
 export class ScheduleService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailNotifications: EmailNotificationService,
+  ) {}
 
   async create(createScheduleInput: CreateScheduleInput) {
     const [customer, doctor] = await Promise.all([
@@ -60,7 +64,7 @@ export class ScheduleService {
     }
 
     try {
-      return await this.prisma.schedule.create({
+      const schedule = await this.prisma.schedule.create({
         data: {
           objective: createScheduleInput.objective,
           scheduledAt: createScheduleInput.scheduledAt,
@@ -69,6 +73,8 @@ export class ScheduleService {
         },
         include: { customer: true, doctor: true },
       });
+      await this.emailNotifications.scheduleCreated(schedule);
+      return schedule;
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -136,10 +142,12 @@ export class ScheduleService {
     });
   }
 
-  remove(id: string) {
-    return this.prisma.schedule.delete({
+  async remove(id: string) {
+    const schedule = await this.prisma.schedule.delete({
       where: { id },
       include: { customer: true, doctor: true },
     });
+    await this.emailNotifications.scheduleDeleted(schedule);
+    return schedule;
   }
 }
