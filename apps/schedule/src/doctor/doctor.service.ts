@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CreateDoctorInput } from './dto/create-doctor.input.js';
 import { UpdateDoctorInput } from './dto/update-doctor.input.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { createPageInfo, normalizePagination } from '../common/pagination.js';
 
 @Injectable()
 export class DoctorService {
@@ -15,8 +16,21 @@ export class DoctorService {
     });
   }
 
-  findAll() {
-    return this.prisma.doctor.findMany();
+  async findAll(page = 1, limit = 10) {
+    const pagination = normalizePagination(page, limit);
+    const [items, totalCount] = await Promise.all([
+      this.prisma.doctor.findMany({
+        skip: pagination.skip,
+        take: pagination.take,
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      }),
+      this.prisma.doctor.count(),
+    ]);
+
+    return {
+      items,
+      pageInfo: createPageInfo(totalCount, pagination.page, pagination.limit),
+    };
   }
 
   findOne(id: string) {

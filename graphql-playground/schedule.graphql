@@ -9,10 +9,37 @@ mutation CreateCustomer($input: CreateCustomerInput!) {
   }
 }
 
-query ListCustomers {
-  customers {
-    id
-    name
+query ListCustomers($page: Int = 1, $limit: Int = 10) {
+  customers(page: $page, limit: $limit) {
+    items {
+      id
+      name
+    }
+    pageInfo {
+      page
+      limit
+      totalCount
+      totalPages
+      hasNextPage
+      hasPreviousPage
+    }
+  }
+}
+
+query ListDoctors($page: Int = 1, $limit: Int = 10) {
+  doctors(page: $page, limit: $limit) {
+    items {
+      id
+      name
+    }
+    pageInfo {
+      page
+      limit
+      totalCount
+      totalPages
+      hasNextPage
+      hasPreviousPage
+    }
   }
 }
 
@@ -39,13 +66,6 @@ mutation RemoveCustomer($id: String!) {
 
 mutation CreateDoctor($input: CreateDoctorInput!) {
   createDoctor(createDoctorInput: $input) {
-    id
-    name
-  }
-}
-
-query ListDoctors {
-  doctors {
     id
     name
   }
@@ -88,18 +108,32 @@ mutation CreateSchedule($input: CreateScheduleInput!) {
   }
 }
 
-query ListSchedules {
-  schedules {
-    id
-    objective
-    scheduledAt
-    customer {
+query ListSchedules(
+  $filter: ScheduleFilterInput
+  $page: Int = 1
+  $limit: Int = 10
+) {
+  schedules(filter: $filter, page: $page, limit: $limit) {
+    items {
       id
-      name
+      objective
+      scheduledAt
+      customer {
+        id
+        name
+      }
+      doctor {
+        id
+        name
+      }
     }
-    doctor {
-      id
-      name
+    pageInfo {
+      page
+      limit
+      totalCount
+      totalPages
+      hasNextPage
+      hasPreviousPage
     }
   }
 }

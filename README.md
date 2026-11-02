@@ -1,4 +1,4 @@
-# Healthcare Scheduling API
+﻿# Healthcare Scheduling API
 
 A GraphQL backend for user authentication and managing customers, doctors, and appointments. The project consists of an Auth Service and a Schedule Service that share a PostgreSQL database.
 
@@ -54,9 +54,9 @@ Prerequisite: Docker Desktop or Docker Engine with Docker Compose.
 
 GraphQL endpoints:
 
-| Service | URL |
-| --- | --- |
-| Auth Service | `http://localhost:3001/graphql` |
+| Service          | URL                             |
+| ---------------- | ------------------------------- |
+| Auth Service     | `http://localhost:3001/graphql` |
 | Schedule Service | `http://localhost:3002/graphql` |
 
 PostgreSQL is available from the host at `localhost:5432`. Connect to the database configured by `POSTGRES_DB` (default: `healthcare`). To stop the containers:
@@ -69,19 +69,19 @@ This command preserves the database volume. Running `docker compose down -v` als
 
 ## Environment variables
 
-| Variable | Compose default | Description |
-| --- | --- | --- |
-| `POSTGRES_DB` | `healthcare` | PostgreSQL database name. |
-| `POSTGRES_USER` | `postgres` | PostgreSQL user. |
-| `POSTGRES_PASSWORD` | `postgres` | PostgreSQL password. Change it outside local development. |
-| `POSTGRES_PORT` | `5432` | PostgreSQL port published to the host. |
-| `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/healthcare?schema=public` | URL for running Prisma commands from the host. Compose builds an internal URL using the `postgres` hostname. |
-| `AUTH_PORT` | `3001` | Auth Service port. |
-| `SCHEDULE_PORT` | `3002` | Schedule Service port. |
-| `AUTH_SERVICE_URL` | `http://auth:3001/graphql` | Auth Service URL used by Schedule Service on the Compose network. Update the port if `AUTH_PORT` changes. |
-| `AUTH_SERVICE_TIMEOUT_MS` | `3000` | Auth Service token validation timeout in milliseconds. |
-| `JWT_ACCESS_SECRET` | `change-this-access-secret` | Access token signing secret. Use a strong secret value. |
-| `JWT_REFRESH_SECRET` | `change-this-refresh-secret` | Refresh token signing secret. Use a strong secret value. |
+| Variable                  | Compose default                                                          | Description                                                                                                  |
+| ------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| `POSTGRES_DB`             | `healthcare`                                                             | PostgreSQL database name.                                                                                    |
+| `POSTGRES_USER`           | `postgres`                                                               | PostgreSQL user.                                                                                             |
+| `POSTGRES_PASSWORD`       | `postgres`                                                               | PostgreSQL password. Change it outside local development.                                                    |
+| `POSTGRES_PORT`           | `5432`                                                                   | PostgreSQL port published to the host.                                                                       |
+| `DATABASE_URL`            | `postgresql://postgres:postgres@localhost:5432/healthcare?schema=public` | URL for running Prisma commands from the host. Compose builds an internal URL using the `postgres` hostname. |
+| `AUTH_PORT`               | `3001`                                                                   | Auth Service port.                                                                                           |
+| `SCHEDULE_PORT`           | `3002`                                                                   | Schedule Service port.                                                                                       |
+| `AUTH_SERVICE_URL`        | `http://auth:3001/graphql`                                               | Auth Service URL used by Schedule Service on the Compose network. Update the port if `AUTH_PORT` changes.    |
+| `AUTH_SERVICE_TIMEOUT_MS` | `3000`                                                                   | Auth Service token validation timeout in milliseconds.                                                       |
+| `JWT_ACCESS_SECRET`       | `change-this-access-secret`                                              | Access token signing secret. Use a strong secret value.                                                      |
+| `JWT_REFRESH_SECRET`      | `change-this-refresh-secret`                                             | Refresh token signing secret. Use a strong secret value.                                                     |
 
 Set local values in `.env`. Do not use the example secrets in a deployment.
 
@@ -185,13 +185,25 @@ Variables:
 List customers:
 
 ```graphql
-query Customers {
-  customers {
-    id
-    name
+query Customers($page: Int = 1, $limit: Int = 10) {
+  customers(page: $page, limit: $limit) {
+    items {
+      id
+      name
+    }
+    pageInfo {
+      page
+      limit
+      totalCount
+      totalPages
+      hasNextPage
+      hasPreviousPage
+    }
   }
 }
 ```
+
+Use `page` starting at 1 and `limit` from 1 to 100. Customer and doctor pages default to page 1 with 10 records per page. For example, pass `{"page":2,"limit":10}` in **QUERY VARIABLES** to get the second page.
 
 Create a doctor:
 
@@ -210,6 +222,27 @@ Variables:
 {
   "input": {
     "name": "Dr. Siti Aminah"
+  }
+}
+```
+
+List doctors with the same pagination arguments:
+
+```graphql
+query Doctors($page: Int = 1, $limit: Int = 10) {
+  doctors(page: $page, limit: $limit) {
+    items {
+      id
+      name
+    }
+    pageInfo {
+      page
+      limit
+      totalCount
+      totalPages
+      hasNextPage
+      hasPreviousPage
+    }
   }
 }
 ```
@@ -250,16 +283,53 @@ Variables:
 List appointments:
 
 ```graphql
-query Schedules {
-  schedules {
-    id
-    objective
-    scheduledAt
-    customer { id name }
-    doctor { id name }
+query Schedules(
+  $filter: ScheduleFilterInput
+  $page: Int = 1
+  $limit: Int = 10
+) {
+  schedules(filter: $filter, page: $page, limit: $limit) {
+    items {
+      id
+      objective
+      scheduledAt
+      customer {
+        id
+        name
+      }
+      doctor {
+        id
+        name
+      }
+    }
+    pageInfo {
+      page
+      limit
+      totalCount
+      totalPages
+      hasNextPage
+      hasPreviousPage
+    }
   }
 }
 ```
+
+Example variables to find a doctor's consultations containing â€œgeneralâ€ during December 2026:
+
+```json
+{
+  "filter": {
+    "doctorId": "<DOCTOR_ID>",
+    "objective": "general",
+    "scheduledAtFrom": "2026-12-01T00:00:00.000Z",
+    "scheduledAtTo": "2026-12-31T23:59:59.999Z"
+  },
+  "page": 1,
+  "limit": 10
+}
+```
+
+Schedule filters are optional and can be combined: `customerId`, `doctorId`, `objective` (case-insensitive substring), `scheduledAtFrom`, and `scheduledAtTo` (inclusive date-time bounds). Results include `items` and `pageInfo` with the total count and next/previous-page flags.
 
 ## GraphQL Playground files
 

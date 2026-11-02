@@ -1,8 +1,9 @@
-import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
 import { CustomerService } from './customer.service.js';
 import { Customer } from './entities/customer.entity.js';
 import { CreateCustomerInput } from './dto/create-customer.input.js';
 import { UpdateCustomerInput } from './dto/update-customer.input.js';
+import { CustomerPage } from './entities/customer-page.entity.js';
 
 @Resolver(() => Customer)
 export class CustomerResolver {
@@ -15,9 +16,12 @@ export class CustomerResolver {
     return this.customerService.create(createCustomerInput);
   }
 
-  @Query(() => [Customer], { name: 'customers' })
-  findAll() {
-    return this.customerService.findAll();
+  @Query(() => CustomerPage, { name: 'customers' })
+  findAll(
+    @Args('page', { type: () => Int, defaultValue: 1 }) page = 1,
+    @Args('limit', { type: () => Int, defaultValue: 10 }) limit = 10,
+  ) {
+    return this.customerService.findAll(page, limit);
   }
 
   @Query(() => Customer, { name: 'customer' })

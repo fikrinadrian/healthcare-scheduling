@@ -3,6 +3,7 @@ import { DoctorService } from './doctor.service.js';
 import { Doctor } from './entities/doctor.entity.js';
 import { CreateDoctorInput } from './dto/create-doctor.input.js';
 import { UpdateDoctorInput } from './dto/update-doctor.input.js';
+import { DoctorPage } from './entities/doctor-page.entity.js';
 
 @Resolver(() => Doctor)
 export class DoctorResolver {
@@ -15,9 +16,12 @@ export class DoctorResolver {
     return this.doctorService.create(createDoctorInput);
   }
 
-  @Query(() => [Doctor], { name: 'doctors' })
-  findAll() {
-    return this.doctorService.findAll();
+  @Query(() => DoctorPage, { name: 'doctors' })
+  findAll(
+    @Args('page', { type: () => Int, defaultValue: 1 }) page = 1,
+    @Args('limit', { type: () => Int, defaultValue: 10 }) limit = 10,
+  ) {
+    return this.doctorService.findAll(page, limit);
   }
 
   @Query(() => Doctor, { name: 'doctor' })

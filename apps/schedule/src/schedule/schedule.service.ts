@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -6,6 +7,8 @@ import {
 import { CreateScheduleInput } from './dto/create-schedule.input.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Prisma } from '../../../../generated/prisma/client.js';
+import { ScheduleFilterInput } from './dto/schedule-filter.input.js';
+import { createPageInfo, normalizePagination } from '../common/pagination.js';
 
 @Injectable()
 export class ScheduleService {
@@ -80,10 +83,50 @@ export class ScheduleService {
     }
   }
 
-  findAll() {
-    return this.prisma.schedule.findMany({
-      include: { customer: true, doctor: true },
-    });
+  async findAll(filter?: ScheduleFilterInput, page = 1, limit = 10) {
+    if (
+      filter?.scheduledAtFrom &&
+      filter.scheduledAtTo &&
+      filter.scheduledAtFrom > filter.scheduledAtTo
+    ) {
+      throw new BadRequestException(
+        'scheduledAtFrom must be earlier than or equal to scheduledAtTo',
+      );
+    }
+
+    const pagination = normalizePagination(page, limit);
+    const where: Prisma.ScheduleWhereInput = {};
+
+    if (filter?.customerId) where.customerId = filter.customerId;
+    if (filter?.doctorId) where.doctorId = filter.doctorId;
+
+    const objective = filter?.objective?.trim();
+    if (objective) {
+      where.objective = { contains: objective, mode: 'insensitive' };
+    }
+
+    if (filter?.scheduledAtFrom || filter?.scheduledAtTo) {
+      where.scheduledAt = {
+        ...(filter.scheduledAtFrom && { gte: filter.scheduledAtFrom }),
+        ...(filter.scheduledAtTo && { lte: filter.scheduledAtTo }),
+      };
+    }
+
+    const [items, totalCount] = await Promise.all([
+      this.prisma.schedule.findMany({
+        where,
+        skip: pagination.skip,
+        take: pagination.take,
+        orderBy: [{ scheduledAt: 'asc' }, { id: 'asc' }],
+        include: { customer: true, doctor: true },
+      }),
+      this.prisma.schedule.count({ where }),
+    ]);
+
+    return {
+      items,
+      pageInfo: createPageInfo(totalCount, pagination.page, pagination.limit),
+    };
   }
 
   findOne(id: string) {
