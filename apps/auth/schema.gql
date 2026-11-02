@@ -2,25 +2,17 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-input CreateUserInput {
-  email: String!
-  password: String!
-}
-
 type LogoutResponse {
   loggedOut: Boolean!
 }
 
 type Mutation {
-  createUser(createUserInput: CreateUserInput!): User!
   logout(userId: String!): LogoutResponse!
   signin(signInInput: SignInput!): SignResponse!
   signup(signUpInput: SignInput!): SignResponse!
 }
 
 type Query {
-  user(id: String!): User!
-  users: [User!]!
   validateToken: ValidateTokenResponse!
 }
 
