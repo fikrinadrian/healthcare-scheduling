@@ -1,0 +1,60 @@
+# Auth Service endpoint: http://localhost:3001/graphql
+# Choose an operation from the operation selector. Each operation has its own variables.
+
+mutation SignUp($input: SignInput!) {
+  signup(signUpInput: $input) {
+    accessToken
+    user {
+      id
+      email
+    }
+  }
+}
+
+mutation SignIn($input: SignInput!) {
+  signin(signInInput: $input) {
+    accessToken
+    user {
+      id
+      email
+    }
+  }
+}
+
+query ValidateToken {
+  validateToken {
+    valid
+    user {
+      id
+      email
+    }
+  }
+}
+
+query ListUsers {
+  users {
+    id
+    email
+  }
+}
+
+query GetUser($id: String!) {
+  user(id: $id) {
+    id
+    email
+  }
+}
+
+# This resolver stores the password as provided. Use SignUp for an account that needs to sign in.
+mutation CreateUserDirectly($input: CreateUserInput!) {
+  createUser(createUserInput: $input) {
+    id
+    email
+  }
+}
+
+mutation Logout($userId: String!) {
+  logout(userId: $userId) {
+    loggedOut
+  }
+}

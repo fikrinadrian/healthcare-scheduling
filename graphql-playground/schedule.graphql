@@ -1,0 +1,128 @@
+# Schedule Service endpoint: http://localhost:3002/graphql
+# Set HTTP HEADERS to {"Authorization":"Bearer <ACCESS_TOKEN>"} before running these operations.
+# Choose an operation from the operation selector. Each operation has its own variables.
+
+mutation CreateCustomer($input: CreateCustomerInput!) {
+  createCustomer(createCustomerInput: $input) {
+    id
+    name
+  }
+}
+
+query ListCustomers {
+  customers {
+    id
+    name
+  }
+}
+
+query GetCustomer($id: String!) {
+  customer(id: $id) {
+    id
+    name
+  }
+}
+
+mutation UpdateCustomer($input: UpdateCustomerInput!) {
+  updateCustomer(updateCustomerInput: $input) {
+    id
+    name
+  }
+}
+
+mutation RemoveCustomer($id: String!) {
+  removeCustomer(id: $id) {
+    id
+    name
+  }
+}
+
+mutation CreateDoctor($input: CreateDoctorInput!) {
+  createDoctor(createDoctorInput: $input) {
+    id
+    name
+  }
+}
+
+query ListDoctors {
+  doctors {
+    id
+    name
+  }
+}
+
+query GetDoctor($id: String!) {
+  doctor(id: $id) {
+    id
+    name
+  }
+}
+
+mutation UpdateDoctor($input: UpdateDoctorInput!) {
+  updateDoctor(updateDoctorInput: $input) {
+    id
+    name
+  }
+}
+
+mutation RemoveDoctor($id: String!) {
+  removeDoctor(id: $id) {
+    id
+    name
+  }
+}
+
+mutation CreateSchedule($input: CreateScheduleInput!) {
+  createSchedule(createScheduleInput: $input) {
+    id
+    objective
+    scheduledAt
+    customer {
+      id
+      name
+    }
+    doctor {
+      id
+      name
+    }
+  }
+}
+
+query ListSchedules {
+  schedules {
+    id
+    objective
+    scheduledAt
+    customer {
+      id
+      name
+    }
+    doctor {
+      id
+      name
+    }
+  }
+}
+
+query GetSchedule($id: String!) {
+  schedule(id: $id) {
+    id
+    objective
+    scheduledAt
+    customer {
+      id
+      name
+    }
+    doctor {
+      id
+      name
+    }
+  }
+}
+
+mutation RemoveSchedule($id: String!) {
+  removeSchedule(id: $id) {
+    id
+    objective
+  }
+}

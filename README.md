@@ -1,110 +1,302 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Healthcare Scheduling API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A GraphQL backend for user authentication and managing customers, doctors, and appointments. The project consists of an Auth Service and a Schedule Service that share a PostgreSQL database.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Technology stack
 
-## Description
+- NestJS and GraphQL
+- Prisma ORM
+- PostgreSQL
+- Docker Compose
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## System architecture
 
-## Project setup
+```mermaid
+flowchart LR
+    Client[Client / GraphQL IDE]
+    Auth[Auth Service<br/>:3001]
+    Schedule[Schedule Service<br/>:3002]
+    DB[(PostgreSQL<br/>:5432)]
 
-```bash
-$ pnpm install
+    Client -->|signup / signin| Auth
+    Client -->|Bearer access token| Schedule
+    Schedule -->|validateToken + Bearer token| Auth
+    Auth --> DB
+    Schedule --> DB
 ```
 
-## Compile and run the project
+All containers connect through the `app-network` network. The Schedule Service validates each request by calling the Auth Service's `validateToken` query. The `migrate` service applies Prisma migrations before either API starts. PostgreSQL data is stored in the Docker volume `postgres_data`.
+
+## Run with Docker Compose
+
+Prerequisite: Docker Desktop or Docker Engine with Docker Compose.
+
+1. Create a local environment file from the example:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   In PowerShell, use `Copy-Item .env.example .env`.
+
+2. Build the images and start all services:
+
+   ```bash
+   docker compose up --build -d
+   ```
+
+3. Check service status and logs when needed:
+
+   ```bash
+   docker compose ps
+   docker compose logs -f auth schedule
+   ```
+
+GraphQL endpoints:
+
+| Service | URL |
+| --- | --- |
+| Auth Service | `http://localhost:3001/graphql` |
+| Schedule Service | `http://localhost:3002/graphql` |
+
+PostgreSQL is available from the host at `localhost:5432`. Connect to the database configured by `POSTGRES_DB` (default: `healthcare`). To stop the containers:
 
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+docker compose down
 ```
 
-## Run tests
+This command preserves the database volume. Running `docker compose down -v` also deletes PostgreSQL data.
+
+## Environment variables
+
+| Variable | Compose default | Description |
+| --- | --- | --- |
+| `POSTGRES_DB` | `healthcare` | PostgreSQL database name. |
+| `POSTGRES_USER` | `postgres` | PostgreSQL user. |
+| `POSTGRES_PASSWORD` | `postgres` | PostgreSQL password. Change it outside local development. |
+| `POSTGRES_PORT` | `5432` | PostgreSQL port published to the host. |
+| `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/healthcare?schema=public` | URL for running Prisma commands from the host. Compose builds an internal URL using the `postgres` hostname. |
+| `AUTH_PORT` | `3001` | Auth Service port. |
+| `SCHEDULE_PORT` | `3002` | Schedule Service port. |
+| `AUTH_SERVICE_URL` | `http://auth:3001/graphql` | Auth Service URL used by Schedule Service on the Compose network. Update the port if `AUTH_PORT` changes. |
+| `AUTH_SERVICE_TIMEOUT_MS` | `3000` | Auth Service token validation timeout in milliseconds. |
+| `JWT_ACCESS_SECRET` | `change-this-access-secret` | Access token signing secret. Use a strong secret value. |
+| `JWT_REFRESH_SECRET` | `change-this-refresh-secret` | Refresh token signing secret. Use a strong secret value. |
+
+Set local values in `.env`. Do not use the example secrets in a deployment.
+
+## Authentication
+
+Sign up or sign in through the Auth Service. Copy the returned `accessToken` and send it with every Schedule Service request using the `Authorization` header:
+
+```json
+{
+  "Authorization": "Bearer <ACCESS_TOKEN>"
+}
+```
+
+Set this header in the GraphQL IDE's **HTTP HEADERS** section. Missing or invalid tokens return a GraphQL error with the `UNAUTHENTICATED` code.
+
+## GraphQL examples
+
+Send Auth Service operations to `http://localhost:3001/graphql`. Send data management operations to `http://localhost:3002/graphql`.
+
+### Auth Service
+
+Sign up:
+
+```graphql
+mutation SignUp($input: SignInput!) {
+  signup(signUpInput: $input) {
+    accessToken
+    user {
+      id
+      email
+    }
+  }
+}
+```
+
+Variables:
+
+```json
+{
+  "input": {
+    "email": "budi@example.com",
+    "password": "secure-password"
+  }
+}
+```
+
+Sign in to get an access token:
+
+```graphql
+mutation SignIn($input: SignInput!) {
+  signin(signInInput: $input) {
+    accessToken
+    user {
+      id
+      email
+    }
+  }
+}
+```
+
+Use the same variables format as the `signup` mutation. You can also call `validateToken` with a Bearer header to check a token:
+
+```graphql
+query ValidateToken {
+  validateToken {
+    valid
+    user {
+      id
+      email
+    }
+  }
+}
+```
+
+### Schedule Service
+
+All examples in this section require a Bearer header.
+
+Create a customer:
+
+```graphql
+mutation CreateCustomer($input: CreateCustomerInput!) {
+  createCustomer(createCustomerInput: $input) {
+    id
+    name
+  }
+}
+```
+
+Variables:
+
+```json
+{
+  "input": {
+    "name": "Budi Santoso",
+    "email": "budi@example.com"
+  }
+}
+```
+
+List customers:
+
+```graphql
+query Customers {
+  customers {
+    id
+    name
+  }
+}
+```
+
+Create a doctor:
+
+```graphql
+mutation CreateDoctor($input: CreateDoctorInput!) {
+  createDoctor(createDoctorInput: $input) {
+    id
+    name
+  }
+}
+```
+
+Variables:
+
+```json
+{
+  "input": {
+    "name": "Dr. Siti Aminah"
+  }
+}
+```
+
+Create an appointment. Replace `customerId` and `doctorId` with IDs returned by the previous operations:
+
+```graphql
+mutation CreateSchedule($input: CreateScheduleInput!) {
+  createSchedule(createScheduleInput: $input) {
+    id
+    objective
+    scheduledAt
+    customer {
+      id
+      name
+    }
+    doctor {
+      id
+      name
+    }
+  }
+}
+```
+
+Variables:
+
+```json
+{
+  "input": {
+    "customerId": "<CUSTOMER_ID>",
+    "doctorId": "<DOCTOR_ID>",
+    "objective": "General consultation",
+    "scheduledAt": "2026-11-10T09:00:00.000Z"
+  }
+}
+```
+
+List appointments:
+
+```graphql
+query Schedules {
+  schedules {
+    id
+    objective
+    scheduledAt
+    customer { id name }
+    doctor { id name }
+  }
+}
+```
+
+## GraphQL Playground files
+
+The [`graphql-playground`](graphql-playground) directory contains all currently exposed GraphQL operations, split by service endpoint:
+
+- [`auth.graphql`](graphql-playground/auth.graphql) for Auth Service (`http://localhost:3001/graphql`)
+- [`schedule.graphql`](graphql-playground/schedule.graphql) for Schedule Service (`http://localhost:3002/graphql`)
+
+With the GraphQL Playground desktop app, open a `.graphql` file directly (or double-click it in your file manager). Select an operation from the operation selector, then enter that operation's JSON in **QUERY VARIABLES**. In the browser-based Playground, paste the contents of the relevant file into the editor.
+
+For Schedule Service operations, set **HTTP HEADERS** to `{"Authorization":"Bearer <ACCESS_TOKEN>"}`. First run `SignUp` or `SignIn` in `auth.graphql`, copy the returned access token, then use it in the Schedule Service header. Create a customer and doctor before creating a schedule; remove the schedule before removing its customer or doctor.
+
+The `CreateUserDirectly` operation is included to reflect the Auth schema, but its resolver stores the password as provided. Use `SignUp` for accounts that need to sign in.
+
+## Run without Docker
+
+Set up PostgreSQL and configure `DATABASE_URL` in `.env` to point to that database. Then run:
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+pnpm install
+pnpm prisma:generate
+pnpm prisma:migrate:deploy
 ```
 
-## Database migrations
-
-The auth and schedule services share the root Prisma schema and migration history. Run Prisma commands from the repository root:
+Start each service in a separate terminal from the project root:
 
 ```bash
-pnpm run prisma:migrate:status
-pnpm run prisma:migrate:dev -- --name describe_change
-pnpm run prisma:generate
+pnpm exec nest start auth --watch
 ```
-
-Do not run `prisma migrate reset` against the shared database; it drops the database schema.
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+AUTH_SERVICE_URL=http://localhost:3001/graphql pnpm exec nest start schedule --watch
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+In PowerShell, start the Schedule Service with:
 
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+```powershell
+$env:AUTH_SERVICE_URL = 'http://localhost:3001/graphql'
+pnpm exec nest start schedule --watch
+```

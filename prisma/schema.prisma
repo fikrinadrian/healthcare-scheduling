@@ -43,6 +43,4 @@ model Schedule {
   updatedAt   DateTime @updatedAt
   customer    Customer @relation(fields: [customerId], references: [id])
   doctor      Doctor   @relation(fields: [doctorId], references: [id])
-
-  @@unique([doctorId, scheduledAt])
 }
