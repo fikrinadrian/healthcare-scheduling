@@ -343,9 +343,86 @@ Example variables to find a doctor's consultations containing â€œgeneralâ�
 
 Schedule filters are optional and can be combined: `customerId`, `doctorId`, `objective` (case-insensitive substring), `scheduledAtFrom`, and `scheduledAtTo` (inclusive date-time bounds). Results include `items` and `pageInfo` with the total count and next/previous-page flags.
 
-## GraphQL Playground files
+## API documentation with GraphQL Playground
 
-The [`graphql-playground`](graphql-playground) directory contains all currently exposed GraphQL operations, split by service endpoint:
+Both services expose a GraphQL API over HTTP. Start the services with Docker Compose as described above, then connect a GraphQL client to the appropriate endpoint:
+
+| Service | GraphQL endpoint | Authentication |
+| --- | --- | --- |
+| Auth Service | `http://localhost:3001/graphql` | Signup and signin do not require a token. `validateToken` reads the `Authorization` header. |
+| Schedule Service | `http://localhost:3002/graphql` | Every query and mutation requires a valid access token. |
+
+The server uses NestJS with Apollo. The repository does not configure the legacy GraphQL Playground web UI as a server plugin; use the GraphQL Playground desktop app or another compatible GraphQL IDE. The [`graphql-playground`](graphql-playground) directory contains ready-to-run operations:
+
+- [`auth.graphql`](graphql-playground/auth.graphql) — authentication operations for the Auth Service.
+- [`schedule.graphql`](graphql-playground/schedule.graphql) — customer, doctor, and schedule operations for the Schedule Service.
+
+Open the relevant `.graphql` file in the desktop app, or paste its contents into a compatible browser IDE. Choose an operation from the operation selector, enter JSON input in **QUERY VARIABLES**, and run it. Set **HTTP HEADERS** as shown below when an operation needs authentication. The IDE's schema documentation panel can also be used to explore the live GraphQL types.
+
+### Auth Service operations
+
+| Operation | Kind | Description |
+| --- | --- | --- |
+| `signup(signUpInput)` | Mutation | Creates an account and returns an access token and the user's `id` and `email`. |
+| `signin(signInInput)` | Mutation | Checks the account credentials and returns a new access token and user details. |
+| `validateToken` | Query | Checks the bearer token from the request header. Returns `valid` and the user when valid; otherwise `valid: false` and `user: null`. |
+| `logout(userId)` | Mutation | Clears the stored refresh token for the specified user. An already-issued access token remains usable until it expires. |
+
+`SignInput` requires an email address and a password of at least 8 characters. `signup` and `signin` return `SignResponse { accessToken, user { id, email } }`. Keep the access token private; do not commit it to source files.
+
+To check a token with `validateToken`, set this header in the IDE:
+
+```json
+{
+  "Authorization": "Bearer <ACCESS_TOKEN>"
+}
+```
+
+### Schedule Service operations
+
+All operations below require the same bearer header:
+
+```json
+{
+  "Authorization": "Bearer <ACCESS_TOKEN>"
+}
+```
+
+| Operation | Kind | Description |
+| --- | --- | --- |
+| `customers(page, limit)` / `customer(id)` | Query | Lists customers with pagination or retrieves one customer by ID. |
+| `createCustomer(createCustomerInput)` / `updateCustomer(updateCustomerInput)` / `removeCustomer(id)` | Mutation | Creates, updates, or deletes a customer. Customer creation requires `name` and `email`; an update requires `id` and `name`, and may include `email`. |
+| `doctors(page, limit)` / `doctor(id)` | Query | Lists doctors with pagination or retrieves one doctor by ID. |
+| `createDoctor(createDoctorInput)` / `updateDoctor(updateDoctorInput)` / `removeDoctor(id)` | Mutation | Creates, updates, or deletes a doctor. Create and update inputs require `name`; update also requires `id`. |
+| `schedules(filter, page, limit)` / `schedule(id)` | Query | Lists appointments with optional filters or retrieves one appointment by ID. List results are ordered by scheduled time, earliest first. |
+| `createSchedule(createScheduleInput)` / `removeSchedule(id)` | Mutation | Creates or deletes an appointment. There is no schedule update mutation. |
+
+`CreateScheduleInput` requires `customerId`, `doctorId`, `objective`, and `scheduledAt`. `scheduledAt` and the date filter values use the GraphQL `DateTime` scalar (ISO 8601 date-time strings, preferably UTC, for example `2026-11-10T09:00:00.000Z`). Create the referenced customer and doctor before creating an appointment. Delete appointments before deleting a customer or doctor that they reference.
+
+The `schedules` filter is optional. Its fields can be combined:
+
+| Filter | Description |
+| --- | --- |
+| `customerId` | Return appointments for one customer. |
+| `doctorId` | Return appointments for one doctor. |
+| `objective` | Match a case-insensitive substring of the appointment objective. |
+| `scheduledAtFrom` | Inclusive lower bound for appointment date and time. |
+| `scheduledAtTo` | Inclusive upper bound for appointment date and time. |
+
+Customer, doctor, and schedule list queries accept `page` (default `1`) and `limit` (default `10`). Invalid page values fall back to `1`; invalid limits fall back to `10`, and limits above `100` are capped at `100`. Paginated responses contain `items` and `pageInfo` with `page`, `limit`, `totalCount`, `totalPages`, `hasNextPage`, and `hasPreviousPage`.
+
+### Suggested request flow and errors
+
+1. Run `SignUp` (or `SignIn`) against the Auth Service and copy `accessToken` from the response.
+2. Set `Authorization: Bearer <ACCESS_TOKEN>` in the IDE's HTTP headers for the Schedule Service.
+3. Create a customer and a doctor, then create an appointment using their returned IDs.
+4. Use list queries to browse records; pass filters and pagination values through **QUERY VARIABLES**.
+
+Missing or invalid Schedule Service credentials produce a GraphQL error with code `UNAUTHENTICATED`. If the Auth Service cannot be reached while validating a Schedule Service request, the Schedule Service reports that it is unavailable. Invalid date-filter ranges (`scheduledAtFrom` later than `scheduledAtTo`) are rejected.
+
+### Ready-to-run GraphQL files
+
+The [`graphql-playground`](graphql-playground) directory contains example operations split by service endpoint:
 
 - [`auth.graphql`](graphql-playground/auth.graphql) for Auth Service (`http://localhost:3001/graphql`)
 - [`schedule.graphql`](graphql-playground/schedule.graphql) for Schedule Service (`http://localhost:3002/graphql`)
@@ -353,8 +430,6 @@ The [`graphql-playground`](graphql-playground) directory contains all currently 
 With the GraphQL Playground desktop app, open a `.graphql` file directly (or double-click it in your file manager). Select an operation from the operation selector, then enter that operation's JSON in **QUERY VARIABLES**. In the browser-based Playground, paste the contents of the relevant file into the editor.
 
 For Schedule Service operations, set **HTTP HEADERS** to `{"Authorization":"Bearer <ACCESS_TOKEN>"}`. First run `SignUp` or `SignIn` in `auth.graphql`, copy the returned access token, then use it in the Schedule Service header. Create a customer and doctor before creating a schedule; remove the schedule before removing its customer or doctor.
-
-The `CreateUserDirectly` operation is included to reflect the Auth schema, but its resolver stores the password as provided. Use `SignUp` for accounts that need to sign in.
 
 ## Unit tests
 
