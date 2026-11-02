@@ -1,22 +1,11 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { ScheduleController } from './app.controller.js';
-import { ScheduleService } from './app.service.js';
+import { describe, expect, it } from 'vitest';
+import { AppController } from './app.controller.js';
+import { AppService } from './app.service.js';
 
-describe('ScheduleController', () => {
-  let scheduleController: ScheduleController;
+describe('AppController', () => {
+  it('returns the Schedule Service health message', () => {
+    const controller = new AppController(new AppService());
 
-  beforeEach(async () => {
-    const app: TestingModule = await Test.createTestingModule({
-      controllers: [ScheduleController],
-      providers: [ScheduleService],
-    }).compile();
-
-    scheduleController = app.get<ScheduleController>(ScheduleController);
-  });
-
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(scheduleController.getHello()).toBe('Hello World!');
-    });
+    expect(controller.getHello()).toBe('Schedule service run!');
   });
 });

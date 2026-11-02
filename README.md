@@ -344,6 +344,21 @@ For Schedule Service operations, set **HTTP HEADERS** to `{"Authorization":"Bear
 
 The `CreateUserDirectly` operation is included to reflect the Auth schema, but its resolver stores the password as provided. Use `SignUp` for accounts that need to sign in.
 
+## Unit tests
+
+Run the unit test suite with Vitest:
+
+```bash
+pnpm test
+```
+
+Run tests in watch mode or generate a coverage report with:
+
+```bash
+pnpm test:watch
+pnpm test:cov
+```
+
 ## Run without Docker
 
 Set up PostgreSQL and configure `DATABASE_URL` in `.env` to point to that database. Then run:

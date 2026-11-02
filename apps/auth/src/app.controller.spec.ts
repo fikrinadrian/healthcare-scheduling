@@ -1,22 +1,11 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { describe, expect, it } from 'vitest';
 import { AuthController } from './app.controller.js';
 import { AuthService } from './app.service.js';
 
 describe('AuthController', () => {
-  let authController: AuthController;
+  it('returns the Auth Service health message', () => {
+    const controller = new AuthController(new AuthService());
 
-  beforeEach(async () => {
-    const app: TestingModule = await Test.createTestingModule({
-      controllers: [AuthController],
-      providers: [AuthService],
-    }).compile();
-
-    authController = app.get<AuthController>(AuthController);
-  });
-
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(authController.getHello()).toBe('Hello World!');
-    });
+    expect(controller.getHello()).toBe('Auth service live!');
   });
 });
